@@ -1,7 +1,6 @@
 <?php
 date_default_timezone_set('Asia/Kolkata');
 include './connect.php';
-// Get the code from the request
 $code = $_REQUEST['code'];
 
 //Function call
@@ -10,68 +9,48 @@ $code = $_REQUEST['code'];
 if ($code == 1) {
     checkUser($_POST['user_name'], $conn);
 } else if ($code == 2) {
-    // Add a new User
     addUser($conn, $_POST['userName'], $_POST['name'], $_POST['mobile'], $_POST['address']);
 } else if ($code == 3) {
-    // Check if the user can login
     checkLogin($conn, $_POST['userName'], $_POST['password']);
 } else if ($code == 4) {
-    // Add an extra item
     addExtraItem($conn, $_POST['closeUserName'], " ", $_POST['product_amount']);
 } else if ($code == 5) {
-    // Add a payment to a user
     addpaidamount($conn,$_POST['paid_amount'],$_POST['userName']);
 } else if ($code == 6) {
-    // Delete an extra item
     deleteExtraItem($_REQUEST['extraItemSno'], $conn, $_REQUEST['user_Name']);
 } else if ($code == 7) {
-    // Delete an extra item from a closed board
     deleteExtraItemFromCloseBoard($_REQUEST['product_id'], $conn, $_REQUEST['board_sno'], $_REQUEST['board_bill']);
 } else if ($code == 8) {
-    // Update the board details
     update_board_details($conn,$_REQUEST['board_Sno'],$_REQUEST['board_start'],$_REQUEST['board_close'],$_REQUEST['userName']);
 }
 else if($code == 9){
-    // Reset the admin password
     reset_admin_password($conn,$_POST['userName'],$_POST['old_password'],$_POST['new_password']);
 } else {
-    // If code is wrong redirect to the index
 ?>
     <script>
         location.href = "./";
     </script>
     <?php
 }
-//---------------------
-//---------------------
-//---------------------
+
+
+
+
+
 
 //Function List
 
 //Reset Admin Password
 function reset_admin_password($conn,$userName,$old_password,$new_password){
     mysqli_autocommit($conn, FALSE);
-    //sanitize inputs
-    $userName = mysqli_real_escape_string($conn, $userName);
-    $old_password = mysqli_real_escape_string($conn, $old_password);
-    $new_password = mysqli_real_escape_string($conn, $new_password);
     $query_for_old_password = "SELECT * FROM `admindata` WHERE userName='{$userName}' AND password='{$old_password}'";
     $result = mysqli_query($conn,$query_for_old_password);
-    if (!$result) {
-        die("Error in query: " . mysqli_error($conn));
-    }
     $num = mysqli_num_rows($result);
 
-    if($num >= 1){// If password is correct
-        // Hash the new password before saving it
-        $new_password = password_hash($new_password, PASSWORD_DEFAULT);
+    if($num >= 1){
         $query = "UPDATE `admindata` SET `password`='{$new_password}' WHERE userName='{$userName}'";
         if(mysqli_query($conn,$query)){
             mysqli_commit($conn);
-            if (!$query) {
-                die("Error in query: " . mysqli_error($conn));
-            }
-
             mysqli_close($conn);
             ?>
                 <script>
@@ -81,7 +60,6 @@ function reset_admin_password($conn,$userName,$old_password,$new_password){
             <?php
         }
         else{
-            mysqli_rollback($conn);
             ?>
                 <script>
                     alert("Server Error Please Try Again!!!!");
@@ -91,7 +69,7 @@ function reset_admin_password($conn,$userName,$old_password,$new_password){
 
         }
 
-    }// If password is not correct
+    }
     else{
         ?>
         <script>
@@ -100,25 +78,17 @@ function reset_admin_password($conn,$userName,$old_password,$new_password){
         </script>
         <?php
     }
+
+
+    
+
 }
 
-// Add a paid amount to a user
+//Add Paid Payments
 function addpaidamount($conn,$paid_amount,$userName){
-    //sanitize inputs
-    $paid_amount = mysqli_real_escape_string($conn, $paid_amount);
-    $userName = mysqli_real_escape_string($conn, $userName);
-
     $time = date("H:i");//Closing Time
     $date = date("d-m-Y");
     mysqli_autocommit($conn, FALSE);
-    // Validate that the paid amount is a number
-    if (!is_numeric($paid_amount)) {
-        ?>
-        <script>
-            alert("Error: Paid amount must be a number.");
-        </script>
-        <?php
-    }
     $query_for_add_amount = "INSERT INTO `paidamount`(`amount`,`userName`,`paiddate`,`paidtime`) VALUES ('{$paid_amount}','{$userName}','{$date}','{$time}')";
 
     if(mysqli_query($conn,$query_for_add_amount))
@@ -145,17 +115,10 @@ function addpaidamount($conn,$paid_amount,$userName){
 
 }
 
-// Update the board details
+
+//Update Board Details with specific Time and User
 function update_board_details($conn,$board_sno,$board_start,$board_close,$userName){
-
-    //sanitize inputs
-    $board_sno = mysqli_real_escape_string($conn, $board_sno);
-    $board_start = mysqli_real_escape_string($conn, $board_start);
-    $board_close = mysqli_real_escape_string($conn, $board_close);
-    $userName = mysqli_real_escape_string($conn, $userName);
     mysqli_autocommit($conn, FALSE);
-
-    // Search for the old data of the board
     $query_for_old_board_data = "SELECT * FROM `boarddata` WHERE bsno='{$board_sno}'";
     $result_data = mysqli_query($conn,$query_for_old_board_data);
     $row_data_old = mysqli_fetch_assoc($result_data);
@@ -168,7 +131,7 @@ function update_board_details($conn,$board_sno,$board_start,$board_close,$userNa
     $num = $row_data_old['boardNo'];
 
     //Stop Board Code Here
-    // Split Start Time
+    //Split Start Time
     $StartTimeArray = str_split($board_start);
     $hourStart= $StartTimeArray[0]."".$StartTimeArray[1];
     $minuteStart = $StartTimeArray[3]."".$StartTimeArray[4];
@@ -181,7 +144,7 @@ function update_board_details($conn,$board_sno,$board_start,$board_close,$userNa
     $THours = ($hourStop-$hourStart)*60;
     $Tminute = ($minuteStop-$minuteStart)+$THours;
 
-
+    
 
     //Board Payment Calculation For M1 or M2
     if($num == 1 || $num == 2){
@@ -218,15 +181,11 @@ function update_board_details($conn,$board_sno,$board_start,$board_close,$userNa
             $totalBoardAmount = round($Tminute*1);
         }
     }
-    if (!$result_data) {
-        die("Error in query: " . mysqli_error($conn));
-    }
+
     //Total Bill Variable
     $totalAmount = $totalBoardAmount + $totalBoardExtraAmount;
 
     $StopQueryM1 = "UPDATE `boarddata` SET `close`='{$board_close}',start='{$board_start}',`userName`='{$userName}',`status`=1,`bxamount`='{$totalBoardExtraAmount}',`boardamount`='{$totalBoardAmount}',`boardtime`='{$boardM1Time}',total_bill='{$totalAmount}' WHERE bsno='{$board_sno}'";
-    
-    // If the query is correct, commit the changes
     if(mysqli_query($conn,$StopQueryM1))
         {
             mysqli_commit($conn);
@@ -239,8 +198,6 @@ function update_board_details($conn,$board_sno,$board_start,$board_close,$userNa
             <?php
         }
         else{
-            // else, rollback the changes and show an error
-            if (!$StopQueryM1) die("Error in query: " . mysqli_error($conn));
             mysqli_rollback($conn);
         mysqli_close($conn);
             ?>
@@ -253,19 +210,13 @@ function update_board_details($conn,$board_sno,$board_start,$board_close,$userNa
         
 }
 
-// Delete an Extra Item From a Close Board
+
+//Delete Extra Item From Close Board
 function deleteExtraItemFromCloseBoard($extraItemSno, $conn, $board_sno, $board_bill)
 {
-    //sanitize inputs
-    $extraItemSno = mysqli_real_escape_string($conn, $extraItemSno);
-    $board_sno = mysqli_real_escape_string($conn, $board_sno);
-    $board_bill = mysqli_real_escape_string($conn, $board_bill);
     mysqli_autocommit($conn, FALSE);
-    // Query to delete the extra item
     $query_for_delete_extra_item = "DELETE FROM `extraboard` WHERE bxsno='{$extraItemSno}'";
     $query_for_update_extra_item_amount = "SELECT * FROM `extraboard` WHERE boardSno='{$board_sno}'";
-
-    // If the item is deleted
     if (mysqli_query($conn, $query_for_delete_extra_item)) {
         $result_extra_Item = mysqli_query($conn, $query_for_update_extra_item_amount);
         $total_amount = 0;
@@ -273,10 +224,8 @@ function deleteExtraItemFromCloseBoard($extraItemSno, $conn, $board_sno, $board_
             $total_amount = $total_amount + $row_total_extra['amount'];
         }
         $total_bill = $board_bill + $total_amount;
-        // Query to update the board information
         $queryforupdateexamount = "UPDATE `boarddata` SET `bxamount`='{$total_amount}',total_bill='{$total_bill}' WHERE bsno='{$board_sno}'";
 
-        // If the update is correct commit it
         if (mysqli_query($conn, $queryforupdateexamount)) {
             mysqli_commit($conn);
             mysqli_close($conn);
@@ -286,7 +235,6 @@ function deleteExtraItemFromCloseBoard($extraItemSno, $conn, $board_sno, $board_
                 location.href = './view_board_details.php?board_sno=<?php echo ($board_sno); ?>';
             </script>
         <?php
-        // If there is an error in the query
         } else {
             mysqli_rollback($conn);
             mysqli_close($conn);
@@ -297,7 +245,6 @@ function deleteExtraItemFromCloseBoard($extraItemSno, $conn, $board_sno, $board_
             </script>
         <?php
         }
-    // If there is an error in the first query
     } else {
         mysqli_rollback($conn);
         mysqli_close($conn);
@@ -310,14 +257,11 @@ function deleteExtraItemFromCloseBoard($extraItemSno, $conn, $board_sno, $board_
     }
 }
 
-// Delete an Extra Item
+//Delete Extra Item
 function deleteExtraItem($extraItemSno, $conn, $userName)
 {
-    //sanitize inputs
-    $extraItemSno = mysqli_real_escape_string($conn, $extraItemSno);
     mysqli_autocommit($conn, FALSE);
     $query_for_delete_extra_item = "DELETE FROM `userextra` WHERE uxsno='{$extraItemSno}'";
-    // If the item is deleted
     if (mysqli_query($conn, $query_for_delete_extra_item)) {
         mysqli_commit($conn);
         mysqli_close($conn);
@@ -327,7 +271,6 @@ function deleteExtraItem($extraItemSno, $conn, $userName)
             location.href = './user_details.php?userName=<?php echo ($userName); ?>';
         </script>
     <?php
-    // If there is an error in the query
     } else {
         mysqli_rollback($conn);
         mysqli_close($conn);
@@ -340,15 +283,11 @@ function deleteExtraItem($extraItemSno, $conn, $userName)
     }
 }
 
-// Check if a user is duplicated
+//Check Dublicate User Name
 function checkUser($userName, $conn)
 {
-    //sanitize inputs
-    $userName = mysqli_real_escape_string($conn, $userName);
     $queryforusercheck = "SELECT * FROM `usersdata` WHERE userName='{$userName}'";
     $checkResult = mysqli_query($conn, $queryforusercheck);
-    if (!$checkResult) die("Error in query: " . mysqli_error($conn));
-    
     $count_user = mysqli_num_rows($checkResult);
     mysqli_close($conn);
     if ($count_user > 0) {
@@ -358,17 +297,11 @@ function checkUser($userName, $conn)
     }
 }
 
-// Add a New User
+//Add New User
 function addUser($conn, $userName, $Name, $Mobile, $Address)
 {
-    //sanitize inputs
-    $userName = mysqli_real_escape_string($conn, $userName);
-    $Name = mysqli_real_escape_string($conn, $Name);
-    $Mobile = mysqli_real_escape_string($conn, $Mobile);
-    $Address = mysqli_real_escape_string($conn, $Address);
     mysqli_autocommit($conn, FALSE);
     $queryForAddUser = "INSERT INTO `usersdata`(`userName`, `Name`, `Mobile`, `Address`) VALUES ('{$userName}','{$Name}','{$Mobile}','{$Address}')";
-    // If the user is added correct
     if (mysqli_query($conn, $queryForAddUser)) {
         mysqli_commit($conn);
         mysqli_close($conn); //Close Data Base
@@ -378,7 +311,6 @@ function addUser($conn, $userName, $Name, $Mobile, $Address)
             location.href = './user_list.php';
         </script>
     <?php
-    // If the user is not added correct
     } else {
         mysqli_rollback($conn);
         mysqli_close($conn); //Close Data Base
@@ -391,33 +323,28 @@ function addUser($conn, $userName, $Name, $Mobile, $Address)
     }
 }
 
-// Check if the Admin can login
+//Admin Login Check
 function checkLogin($conn, $userName, $password)
 {
-    //sanitize inputs
-    $userName = mysqli_real_escape_string($conn, $userName);
-    $password = mysqli_real_escape_string($conn, $password);
-    $queryforchecklogin = "SELECT * FROM admindata WHERE userName='{$userName}'";
+    $queryforchecklogin = "SELECT * FROM admindata login WHERE (login.userName='{$userName}')";
     $result = mysqli_query($conn, $queryforchecklogin);
-    if (!$result) die("Error in query: " . mysqli_error($conn));
-
     $num = mysqli_num_rows($result);
-
-    // If user exist
+    
+    //echo($num);
     if ($num == 1) {
+        mysqli_close($conn); //Close Data Base
         $row_data = mysqli_fetch_assoc($result);
-        //verify password
-        if(password_verify($password,$row_data['password'])){
+        if($row_data['password'] == $password){
             session_start();
             $_SESSION["token"] = $userName;
-            mysqli_close($conn);
             ?>
                 <script>
                     location.href="./";
                 </script>
             <?php
-        }else{
-            mysqli_close($conn);
+        }
+        else
+        {
             ?>
             <script>
                 alert("Wrong Password Please Try Again!!!!");
@@ -425,7 +352,6 @@ function checkLogin($conn, $userName, $password)
             </script>
             <?php
         }
-        
     } else {
     ?>
         <script>
@@ -436,13 +362,9 @@ function checkLogin($conn, $userName, $password)
     }
 }
 
-// Add an extra item
+//Add Extra Item Function
 function addExtraItem($conn, $userName, $product_name, $product_amount)
 {
-    //sanitize inputs
-    $userName = mysqli_real_escape_string($conn, $userName);
-    $product_name = mysqli_real_escape_string($conn, $product_name);
-    $product_amount = mysqli_real_escape_string($conn, $product_amount);
     mysqli_autocommit($conn, FALSE);
     $Time = date("H:i"); //Closing Time
     $date = date("d-m-Y");

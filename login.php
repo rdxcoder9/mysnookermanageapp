@@ -1,7 +1,6 @@
 <?php
 session_start();
 if(empty($_SESSION['token'])){
-    // if token does not exist show the login page
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -231,7 +230,6 @@ body {
     </div>
 </body>
 </html>
-<!-- If token does exist redirect to the main page -->
 <?php
 }
 else{
